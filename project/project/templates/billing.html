@@ -1,0 +1,121 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import empty_state, status_badge with context %}
+
+{% block title %}Billing | CareConnect360{% endblock %}
+{% block page_title %}Billing{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Billing</h1>
+    <p class="text-muted mb-0">{{ 'Invoices raised for your consultations.' if current_user.is_doctor else 'Invoices, payments and receipts for your consultations.' }}</p>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-4">
+    <div class="cc-stat cc-animate">
+      <div class="cc-stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <div>
+        <div class="cc-stat-value">{{ format_inr(paid_total) }}</div>
+        <div class="cc-stat-label">{{ 'Collected' if current_user.is_doctor else 'Total paid' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="cc-stat cc-animate cc-delay-1">
+      <div class="cc-stat-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+      <div>
+        <div class="cc-stat-value">{{ format_inr(outstanding_total) }}</div>
+        <div class="cc-stat-label">Outstanding</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="cc-stat cc-animate cc-delay-2">
+      <div class="cc-stat-icon"><i class="fa-solid fa-file-invoice"></i></div>
+      <div>
+        <div class="cc-stat-value">{{ invoices | length }}</div>
+        <div class="cc-stat-label">Invoices</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cc-card cc-animate cc-delay-1">
+  <h2 class="h5 mb-3">Billing history</h2>
+  {% if invoices %}
+    <div class="table-responsive">
+      <table class="table cc-table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Appointment</th>
+            <th>{{ 'Patient' if current_user.is_doctor else 'Doctor' }}</th>
+            <th>Payment date</th>
+            <th class="text-end">Total</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+            <tr>
+              <td class="fw-semibold">{{ inv.invoice_number }}</td>
+              <td>{{ inv.appointment.code }}</td>
+              <td>{{ inv.patient.full_name if current_user.is_doctor else inv.doctor.name }}</td>
+              <td>{{ inv.payment_date.strftime('%d %b %Y') if inv.payment_date else '-' }}</td>
+              <td class="text-end fw-semibold">{{ format_inr(inv.total_amount) }}</td>
+              <td>{{ status_badge(inv.status) }}</td>
+              <td class="text-end text-nowrap">
+                {% if not current_user.is_doctor and inv.status == 'unpaid' %}
+                  <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#payModal{{ inv.id }}">
+                    <i class="fa-solid fa-credit-card me-1"></i>Pay
+                  </button>
+                {% endif %}
+                <a href="{{ url_for('main.print_invoice', invoice_id=inv.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-print"></i></a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {{ empty_state('fa-file-invoice-dollar', 'No invoices yet. An invoice is created when a consultation is booked.') }}
+  {% endif %}
+</div>
+
+{% if not current_user.is_doctor %}
+  {% for inv in invoices if inv.status == 'unpaid' %}
+    <div class="modal fade" id="payModal{{ inv.id }}" tabindex="-1" aria-labelledby="payModalLabel{{ inv.id }}" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <form method="post" action="{{ url_for('main.pay_invoice', invoice_id=inv.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+              <h2 class="modal-title h5" id="payModalLabel{{ inv.id }}">Pay invoice {{ inv.invoice_number }}</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="d-flex justify-content-between small mb-1"><span class="text-muted">Consultation fee</span><span>{{ format_inr(inv.consultation_fee) }}</span></div>
+              <div class="d-flex justify-content-between small mb-3"><span class="text-muted">GST (18%)</span><span>{{ format_inr(inv.tax_amount) }}</span></div>
+              <div class="d-flex justify-content-between fw-bold fs-5 mb-4"><span>Total</span><span>{{ format_inr(inv.total_amount) }}</span></div>
+              <label for="payment_method{{ inv.id }}" class="form-label">Payment method</label>
+              <select class="form-select" id="payment_method{{ inv.id }}" name="payment_method" required>
+                {% for method in payment_methods %}
+                  <option value="{{ method }}">{{ method }}</option>
+                {% endfor %}
+              </select>
+              <p class="small text-muted mt-3 mb-0"><i class="fa-solid fa-shield-halved me-1"></i>This is a simulated payment. No money is transferred.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-lock me-1"></i>Confirm payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

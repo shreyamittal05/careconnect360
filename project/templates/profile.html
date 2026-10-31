@@ -1,0 +1,95 @@
+{% extends "dashboard_layout.html" %}
+
+{% block title %}My Profile | CareConnect360{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+{% set doc = current_user.doctor %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>My Profile</h1>
+    <p class="text-muted mb-0">Keep your details up to date so {{ 'patients can find and trust your profile.' if current_user.is_doctor else 'your appointments and invoices are accurate.' }}</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="cc-card text-center cc-animate">
+      <div class="cc-avatar mx-auto mb-3" style="width:88px;height:88px;font-size:1.75rem;">{{ current_user.initials }}</div>
+      <h2 class="h5 mb-1">{{ current_user.full_name }}</h2>
+      <div class="small text-muted mb-3">{{ doc.specialization if doc else 'Patient account' }}</div>
+      <dl class="text-start small mb-0">
+        <div class="d-flex justify-content-between py-2 border-top"><dt class="text-muted fw-normal">Email</dt><dd class="mb-0 fw-semibold text-break">{{ current_user.email }}</dd></div>
+        <div class="d-flex justify-content-between py-2 border-top"><dt class="text-muted fw-normal">Account type</dt><dd class="mb-0 fw-semibold text-capitalize">{{ current_user.role }}</dd></div>
+        {% if doc %}
+          <div class="d-flex justify-content-between py-2 border-top"><dt class="text-muted fw-normal">Rating</dt><dd class="mb-0 fw-semibold">{{ '%.1f' | format(doc.rating) }} / 5</dd></div>
+        {% elif current_user.date_of_birth %}
+          <div class="d-flex justify-content-between py-2 border-top"><dt class="text-muted fw-normal">Date of birth</dt><dd class="mb-0 fw-semibold">{{ current_user.date_of_birth.strftime('%d %b %Y') }}</dd></div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="cc-card cc-animate cc-delay-1">
+      <h2 class="h5 mb-3">Personal details</h2>
+      <form method="post" action="{{ url_for('main.profile') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="full_name" class="form-label">Full name</label>
+            <input type="text" class="form-control" id="full_name" name="full_name" maxlength="120" value="{{ current_user.full_name }}" required>
+          </div>
+          <div class="col-md-6">
+            <label for="phone" class="form-label">Phone number</label>
+            <input type="tel" class="form-control" id="phone" name="phone" value="{{ current_user.phone }}" required>
+          </div>
+        </div>
+
+        {% if doc %}
+          <h2 class="h5 mt-4 mb-3">Professional details</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="specialization" class="form-label">Specialization</label>
+              <select class="form-select" id="specialization" name="specialization" required>
+                {% for spec in specializations %}
+                  <option value="{{ spec }}" {% if spec == doc.specialization %}selected{% endif %}>{{ spec }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="qualification" class="form-label">Qualification</label>
+              <input type="text" class="form-control" id="qualification" name="qualification" maxlength="160" value="{{ doc.qualification }}" required>
+            </div>
+            <div class="col-md-4">
+              <label for="experience_years" class="form-label">Experience (years)</label>
+              <input type="number" class="form-control" id="experience_years" name="experience_years" min="0" max="60" value="{{ doc.experience_years }}" required>
+            </div>
+            <div class="col-md-4">
+              <label for="consultation_fee" class="form-label">Consultation fee (INR)</label>
+              <input type="number" class="form-control" id="consultation_fee" name="consultation_fee" min="100" max="10000" value="{{ doc.consultation_fee }}" required>
+            </div>
+            <div class="col-12">
+              <span class="form-label d-block">Available days</span>
+              <div class="d-flex flex-wrap gap-2">
+                {% for day in weekdays %}
+                  <div class="cc-day-option">
+                    <input type="checkbox" class="btn-check" id="day_{{ day }}" name="availability_days" value="{{ day }}" {% if day in doc.days_list %}checked{% endif %}>
+                    <label class="btn btn-outline-primary btn-sm" for="day_{{ day }}">{{ day }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="col-12">
+              <label for="bio" class="form-label">About you <span class="text-muted small">(optional)</span></label>
+              <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="600">{{ doc.bio }}</textarea>
+            </div>
+          </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary mt-4"><i class="fa-solid fa-floppy-disk me-2"></i>Save changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

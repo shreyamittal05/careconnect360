@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Something went wrong | CareConnect360{% endblock %}
+
+{% block body %}
+<main class="container py-5">
+  <div class="cc-card text-center mx-auto cc-animate" style="max-width: 560px;">
+    <div class="cc-icon-badge mx-auto mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    {% if error %}
+      <h1 class="h3 mb-2">{{ error.code }} - {{ error.name }}</h1>
+      <p class="text-muted mb-4">{{ error.description }}</p>
+    {% else %}
+      <h1 class="h3 mb-2">Something went wrong</h1>
+      <p class="text-muted mb-4">We could not complete your request. Please try again in a moment.</p>
+    {% endif %}
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+      <a href="{{ url_for('main.index') }}" class="btn btn-primary"><i class="fa-solid fa-house me-2"></i>Back to home</a>
+      <a href="javascript:history.back()" class="btn btn-outline-primary">Go back</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

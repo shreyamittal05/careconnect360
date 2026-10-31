@@ -1,0 +1,136 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import empty_state with context %}
+
+{% block title %}Prescriptions | CareConnect360{% endblock %}
+{% block page_title %}Prescriptions{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Prescriptions</h1>
+    <p class="text-muted mb-0">
+      {{ 'Create digital prescriptions for your patients and print them when needed.' if current_user.is_doctor else 'View and print the medicines your doctors have prescribed.' }}
+    </p>
+  </div>
+</div>
+
+{% if current_user.is_doctor %}
+  <div class="cc-card mb-4 cc-animate">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h2 class="h5 mb-0">New prescription</h2>
+      <span class="small text-muted">Linked to a confirmed or completed appointment</span>
+    </div>
+    {% if eligible %}
+      <form method="post" action="{{ url_for('main.prescriptions') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="appointment_id" class="form-label">Appointment</label>
+            <select class="form-select" id="appointment_id" name="appointment_id" required>
+              <option value="">Select appointment</option>
+              {% for appt in eligible %}
+                <option value="{{ appt.id }}" {% if (appt.id | string) == ((form.get('appointment_id') or '') | string) %}selected{% endif %}>
+                  {{ appt.code }} - {{ appt.patient.full_name }} - {{ appt.appointment_date.strftime('%d %b %Y') }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="diagnosis" class="form-label">Diagnosis</label>
+            <input type="text" class="form-control" id="diagnosis" name="diagnosis" maxlength="255" value="{{ form.get('diagnosis', '') }}" required>
+          </div>
+          <div class="col-md-4">
+            <label for="medicine_name" class="form-label">Medicine name</label>
+            <input type="text" class="form-control" id="medicine_name" name="medicine_name" maxlength="120" value="{{ form.get('medicine_name', '') }}" placeholder="e.g. Amoxicillin 500 mg" required>
+          </div>
+          <div class="col-md-4">
+            <label for="dosage" class="form-label">Dosage</label>
+            <input type="text" class="form-control" id="dosage" name="dosage" maxlength="60" value="{{ form.get('dosage', '') }}" placeholder="e.g. 1 capsule" required>
+          </div>
+          <div class="col-md-4">
+            <label for="frequency" class="form-label">Frequency</label>
+            <input type="text" class="form-control" id="frequency" name="frequency" maxlength="60" value="{{ form.get('frequency', '') }}" placeholder="e.g. Twice a day" required>
+          </div>
+          <div class="col-md-4">
+            <label for="duration_days" class="form-label">Duration (days)</label>
+            <input type="number" class="form-control" id="duration_days" name="duration_days" min="1" max="365" value="{{ form.get('duration_days', 5) }}" required>
+          </div>
+          <div class="col-md-4">
+            <label for="prescription_date" class="form-label">Prescription date</label>
+            <input type="date" class="form-control" id="prescription_date" name="prescription_date" value="{{ form.get('prescription_date', today.isoformat()) }}" required>
+          </div>
+          <div class="col-12">
+            <label for="instructions" class="form-label">Instructions</label>
+            <textarea class="form-control" id="instructions" name="instructions" rows="2" maxlength="1000" placeholder="e.g. Take after meals. Complete the full course.">{{ form.get('instructions', '') }}</textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-4"><i class="fa-solid fa-file-circle-plus me-2"></i>Save prescription</button>
+      </form>
+    {% else %}
+      {{ empty_state('fa-calendar-check', 'No confirmed or completed appointments yet. Accept a booking first to prescribe.') }}
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="cc-card cc-animate cc-delay-1">
+  <h2 class="h5 mb-3">{{ 'Prescriptions you issued' if current_user.is_doctor else 'My prescriptions' }}</h2>
+  {% if prescriptions %}
+    {% if current_user.is_doctor %}
+      <div class="table-responsive">
+        <table class="table cc-table mb-0">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Patient</th>
+              <th>Medicine</th>
+              <th>Valid until</th>
+              <th>Status</th>
+              <th class="text-end">Print</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rx in prescriptions %}
+              <tr>
+                <td class="fw-semibold">{{ rx.code }}</td>
+                <td>{{ rx.patient.full_name }}</td>
+                <td>{{ rx.medicine_name }}<div class="small text-muted">{{ rx.dosage }}, {{ rx.frequency }}</div></td>
+                <td>{{ rx.valid_until.strftime('%d %b %Y') }}</td>
+                <td><span class="cc-badge cc-badge-{{ 'active' if rx.is_active else 'expired' }}">{{ 'active' if rx.is_active else 'expired' }}</span></td>
+                <td class="text-end"><a href="{{ url_for('main.print_prescription', prescription_id=rx.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-print me-1"></i>Print</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="row g-3">
+        {% for rx in prescriptions %}
+          <div class="col-md-6 col-xl-4">
+            <article class="border rounded-4 p-3 h-100 d-flex flex-column cc-card-hover">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <div class="small text-muted">{{ rx.code }} &middot; {{ rx.prescription_date.strftime('%d %b %Y') }}</div>
+                  <h3 class="h5 mb-0">{{ rx.medicine_name }}</h3>
+                </div>
+                <span class="cc-badge cc-badge-{{ 'active' if rx.is_active else 'expired' }}">{{ 'active' if rx.is_active else 'expired' }}</span>
+              </div>
+              <dl class="small mb-3">
+                <div class="d-flex justify-content-between"><dt class="text-muted fw-normal">Dosage</dt><dd class="mb-0 fw-semibold">{{ rx.dosage }}</dd></div>
+                <div class="d-flex justify-content-between"><dt class="text-muted fw-normal">Frequency</dt><dd class="mb-0 fw-semibold">{{ rx.frequency }}</dd></div>
+                <div class="d-flex justify-content-between"><dt class="text-muted fw-normal">Duration</dt><dd class="mb-0 fw-semibold">{{ rx.duration_days }} days</dd></div>
+                <div class="d-flex justify-content-between"><dt class="text-muted fw-normal">Doctor</dt><dd class="mb-0 fw-semibold">{{ rx.doctor.name }}</dd></div>
+              </dl>
+              {% if rx.instructions %}
+                <p class="small text-muted">{{ rx.instructions }}</p>
+              {% endif %}
+              <a href="{{ url_for('main.print_prescription', prescription_id=rx.id) }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm mt-auto"><i class="fa-solid fa-print me-1"></i>Print prescription</a>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% else %}
+    {{ empty_state('fa-prescription-bottle-medical', 'No prescriptions yet. They appear here after a consultation.') }}
+  {% endif %}
+</div>
+{% endblock %}

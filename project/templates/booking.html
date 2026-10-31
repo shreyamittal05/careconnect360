@@ -1,0 +1,75 @@
+{% extends "dashboard_layout.html" %}
+
+{% block title %}Book appointment | CareConnect360{% endblock %}
+{% block page_title %}Book appointment{% endblock %}
+
+{% block content %}
+{% set selected_doctor = (form.get('doctor_id') or '') | string %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Book an appointment</h1>
+    <p class="text-muted mb-0">Choose a doctor, pick a free slot and describe how you feel.</p>
+  </div>
+</div>
+
+<form method="post" action="{{ url_for('main.book_appointment') }}" class="row g-4" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="col-lg-8">
+    <div class="cc-card cc-animate">
+      <h2 class="h5"><span class="cc-chip me-2">1</span>Select a doctor</h2>
+      <select class="form-select mb-4" id="doctorSelect" name="doctor_id" required>
+        <option value="">Choose a doctor</option>
+        {% for doc in doctors %}
+          <option value="{{ doc.id }}" {% if doc.id | string == selected_doctor %}selected{% endif %}>
+            {{ doc.name }} - {{ doc.specialization }} ({{ format_inr(doc.consultation_fee) }})
+          </option>
+        {% endfor %}
+      </select>
+
+      <h2 class="h5"><span class="cc-chip me-2">2</span>Choose date and time</h2>
+      <div class="row g-3 mb-2">
+        <div class="col-md-6">
+          <label for="appointmentDate" class="form-label">Date</label>
+          <input type="date" class="form-control" id="appointmentDate" name="appointment_date" value="{{ form.get('appointment_date', min_date) }}" min="{{ min_date }}" max="{{ max_date }}" required>
+        </div>
+      </div>
+      <div class="form-label mt-3">Available time slots</div>
+      <div id="slotGrid" class="row row-cols-3 row-cols-md-4 g-2 mb-4" data-selected="{{ form.get('time_slot', '') }}" aria-live="polite">
+        <p class="text-muted small mb-0">Select a doctor and date to see open time slots.</p>
+      </div>
+
+      <h2 class="h5"><span class="cc-chip me-2">3</span>Consultation details</h2>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6 cc-mode-option">
+          <input type="radio" id="modeVideo" name="mode" value="video" {% if form.get('mode', 'video') == 'video' %}checked{% endif %}>
+          <label for="modeVideo"><span class="cc-icon-badge mb-0"><i class="fa-solid fa-video"></i></span><span><strong>Video consultation</strong><br><small class="text-muted">Face-to-face on screen</small></span></label>
+        </div>
+        <div class="col-md-6 cc-mode-option">
+          <input type="radio" id="modeAudio" name="mode" value="audio" {% if form.get('mode') == 'audio' %}checked{% endif %}>
+          <label for="modeAudio"><span class="cc-icon-badge teal mb-0"><i class="fa-solid fa-phone"></i></span><span><strong>Audio consultation</strong><br><small class="text-muted">Voice call only</small></span></label>
+        </div>
+      </div>
+      <div class="mb-2">
+        <label for="symptoms" class="form-label">Symptoms or reason for consultation</label>
+        <textarea class="form-control" id="symptoms" name="symptoms" rows="4" maxlength="500" placeholder="Describe what you are feeling, how long it has lasted and any medicines you take." required>{{ form.get('symptoms', '') }}</textarea>
+        <div class="form-text">Between 10 and 500 characters.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="cc-card position-sticky cc-animate cc-delay-1" style="top: 96px;">
+      <h2 class="h5 mb-3">Booking summary</h2>
+      <ul class="list-unstyled small d-grid gap-2 mb-4">
+        <li class="d-flex justify-content-between"><span class="text-muted">Status after booking</span><span class="fw-semibold">Pending doctor approval</span></li>
+        <li class="d-flex justify-content-between"><span class="text-muted">Invoice</span><span class="fw-semibold">Generated instantly</span></li>
+        <li class="d-flex justify-content-between"><span class="text-muted">Booking window</span><span class="fw-semibold">Next 30 days</span></li>
+      </ul>
+      <button type="submit" class="btn btn-primary btn-lg w-100">
+        <i class="fa-solid fa-calendar-check me-2"></i>Confirm booking
+      </button>
+      <p class="small text-muted mt-3 mb-0">You can cancel from My Appointments while the booking is pending or confirmed.</p>
+    </div>
+  </div>
+</form>
+{% endblock %}

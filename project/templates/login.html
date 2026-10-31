@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Log in | CareConnect360{% endblock %}
+
+{% block body %}
+{% include "public_nav.html" %}
+
+<section class="cc-auth-wrap">
+  <div class="container">
+    <div class="cc-auth-card cc-animate">
+      <div class="cc-card p-4 p-md-5">
+        <div class="text-center mb-4">
+          <span class="cc-icon-badge mx-auto"><i class="fa-solid fa-right-to-bracket"></i></span>
+          <h1 class="h3 mb-1">Welcome back</h1>
+          <p class="text-muted mb-0">Log in to manage your appointments and care.</p>
+        </div>
+
+        <form method="post" action="{{ url_for('main.login') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="email" class="form-label">Email address</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ request.form.get('email', '') }}" placeholder="you@example.com" autocomplete="username" required>
+          </div>
+          <div class="mb-4">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="fa-solid fa-right-to-bracket me-2"></i>Log in
+          </button>
+        </form>
+
+        <p class="text-center text-muted mt-4 mb-0">
+          New to CareConnect360? <a href="{{ url_for('main.register') }}" class="fw-semibold">Create an account</a>
+        </p>
+      </div>
+
+      <div class="cc-demo-box mt-4">
+        <div class="fw-semibold mb-2"><i class="fa-solid fa-flask me-1"></i> Demo accounts for this presentation</div>
+        <div class="d-grid gap-2">
+          {% for account in demo_accounts %}
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white rounded-3 p-2">
+              <div class="small">
+                <strong>{{ account.label }}:</strong> {{ account.email }}<br>
+                <span class="text-muted">Password: {{ account.password }}</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" data-fill-email="{{ account.email }}" data-fill-password="{{ account.password }}">Use account</button>
+            </div>
+          {% endfor %}
+          <div class="small text-muted px-1">All sample doctors use the password Doctor@123, for example ananya.sharma@careconnect360.com.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

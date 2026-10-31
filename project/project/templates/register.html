@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Create account | CareConnect360{% endblock %}
+
+{% block body %}
+{% include "public_nav.html" %}
+
+{% set chosen_days = request.form.getlist('availability_days') if request.method == 'POST' else ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] %}
+{% set selected_role = form.get('role', 'patient') %}
+
+<section class="cc-auth-wrap">
+  <div class="container">
+    <div class="cc-auth-card cc-animate" style="max-width: 640px;">
+      <div class="cc-card p-4 p-md-5">
+        <div class="text-center mb-4">
+          <span class="cc-icon-badge teal mx-auto"><i class="fa-solid fa-user-plus"></i></span>
+          <h1 class="h3 mb-1">Create your account</h1>
+          <p class="text-muted mb-0">Join as a patient to book care, or as a doctor to see your patients.</p>
+        </div>
+
+        <form method="post" action="{{ url_for('main.register') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="cc-role-toggle btn-group w-100 mb-4" role="group" aria-label="Account type">
+            <input type="radio" class="btn-check" name="role" id="rolePatient" value="patient" autocomplete="off" {% if selected_role == 'patient' %}checked{% endif %}>
+            <label class="btn py-2" for="rolePatient"><i class="fa-solid fa-user me-2"></i>Patient</label>
+            <input type="radio" class="btn-check" name="role" id="roleDoctor" value="doctor" autocomplete="off" {% if selected_role == 'doctor' %}checked{% endif %}>
+            <label class="btn py-2" for="roleDoctor"><i class="fa-solid fa-user-doctor me-2"></i>Doctor</label>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="full_name" class="form-label">Full name</label>
+              <input type="text" class="form-control" id="full_name" name="full_name" value="{{ form.get('full_name', '') }}" maxlength="120" required>
+            </div>
+            <div class="col-md-6">
+              <label for="email" class="form-label">Email address</label>
+              <input type="email" class="form-control" id="email" name="email" value="{{ form.get('email', '') }}" maxlength="120" autocomplete="email" required>
+            </div>
+            <div class="col-md-6">
+              <label for="phone" class="form-label">Phone number</label>
+              <input type="tel" class="form-control" id="phone" name="phone" value="{{ form.get('phone', '') }}" placeholder="+91 98765 43210" required>
+            </div>
+            <div class="col-md-6">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" name="password" minlength="8" autocomplete="new-password" required>
+              <div class="form-text">At least 8 characters.</div>
+            </div>
+            <div class="col-md-6">
+              <label for="confirm_password" class="form-label">Confirm password</label>
+              <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8" autocomplete="new-password" required>
+            </div>
+
+            <div class="col-md-6" data-role-section="patient">
+              <label for="date_of_birth" class="form-label">Date of birth <span class="text-muted fw-normal">(optional)</span></label>
+              <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ form.get('date_of_birth', '') }}">
+            </div>
+
+            <div class="col-12 d-none" data-role-section="doctor">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="specialization" class="form-label">Specialization</label>
+                  <select class="form-select" id="specialization" name="specialization">
+                    <option value="">Select specialization</option>
+                    {% for item in specializations %}
+                      <option value="{{ item }}" {% if form.get('specialization') == item %}selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="qualification" class="form-label">Qualification</label>
+                  <input type="text" class="form-control" id="qualification" name="qualification" value="{{ form.get('qualification', '') }}" placeholder="MBBS, MD">
+                </div>
+                <div class="col-md-4">
+                  <label for="experience_years" class="form-label">Experience (years)</label>
+                  <input type="number" min="0" max="60" class="form-control" id="experience_years" name="experience_years" value="{{ form.get('experience_years', '') }}">
+                </div>
+                <div class="col-md-8">
+                  <label for="consultation_fee" class="form-label">Consultation fee (INR)</label>
+                  <input type="number" min="100" max="10000" step="50" class="form-control" id="consultation_fee" name="consultation_fee" value="{{ form.get('consultation_fee', '500') }}">
+                </div>
+                <div class="col-12">
+                  <span class="form-label d-block">Available days</span>
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for day in weekdays %}
+                      <span class="cc-day-option">
+                        <input type="checkbox" id="reg_day_{{ day }}" name="availability_days" value="{{ day }}" {% if day in chosen_days %}checked{% endif %}>
+                        <label for="reg_day_{{ day }}">{{ day }}</label>
+                      </span>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label for="bio" class="form-label">Short bio <span class="text-muted fw-normal">(optional)</span></label>
+                  <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="600">{{ form.get('bio', '') }}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">
+            <i class="fa-solid fa-circle-check me-2"></i>Create account
+          </button>
+        </form>
+
+        <p class="text-center text-muted mt-4 mb-0">
+          Already registered? <a href="{{ url_for('main.login') }}" class="fw-semibold">Log in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

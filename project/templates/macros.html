@@ -1,0 +1,29 @@
+{% macro side_link(endpoint, label, icon) -%}
+  <a href="{{ url_for(endpoint) }}" class="cc-side-link{% if request.endpoint == endpoint %} active{% endif %}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>
+    <i class="fa-solid {{ icon }}"></i>
+    <span>{{ label }}</span>
+  </a>
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+  <span class="cc-badge cc-badge-{{ status }}">{{ status | replace('_', ' ') }}</span>
+{%- endmacro %}
+
+{% macro empty_state(icon, message) -%}
+  <div class="cc-empty">
+    <i class="fa-solid {{ icon }} d-block"></i>
+    <p class="mb-0">{{ message }}</p>
+  </div>
+{%- endmacro %}
+
+{% macro stat_card(icon, tone, value, label) -%}
+  <div class="cc-card cc-card-hover cc-stat">
+    <div class="cc-stat-icon" style="background: var(--cc-{{ tone }}-soft); color: var(--cc-{{ tone }});">
+      <i class="fa-solid {{ icon }}"></i>
+    </div>
+    <div>
+      <div class="cc-stat-value">{{ value }}</div>
+      <div class="cc-stat-label">{{ label }}</div>
+    </div>
+  </div>
+{%- endmacro %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "macros.html" import side_link with context %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block body %}
+<div class="cc-app">
+  <aside class="cc-sidebar" aria-label="Sidebar navigation">
+    <a class="cc-brand" href="{{ url_for('main.index') }}">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="CareConnect360 logo">
+    </a>
+    <nav class="cc-sidebar-nav d-flex flex-column gap-1 w-100">
+      {% if current_user.is_doctor %}
+        <div class="cc-sidebar-label">Overview</div>
+        {{ side_link('main.doctor_dashboard', 'Dashboard', 'fa-gauge-high') }}
+        <div class="cc-sidebar-label">Practice</div>
+        {{ side_link('main.appointments', 'Appointments', 'fa-calendar-check') }}
+        {{ side_link('main.consultation', 'Virtual Consultation', 'fa-video') }}
+        {{ side_link('main.prescriptions', 'Prescriptions', 'fa-prescription-bottle-medical') }}
+        {{ side_link('main.billing', 'Billing', 'fa-file-invoice-dollar') }}
+        <div class="cc-sidebar-label">Account</div>
+        {{ side_link('main.profile', 'My Profile', 'fa-user-gear') }}
+      {% else %}
+        <div class="cc-sidebar-label">Overview</div>
+        {{ side_link('main.dashboard', 'Dashboard', 'fa-gauge-high') }}
+        <div class="cc-sidebar-label">Care</div>
+        {{ side_link('main.doctors', 'Find Doctors', 'fa-user-doctor') }}
+        {{ side_link('main.book_appointment', 'Book Appointment', 'fa-calendar-plus') }}
+        {{ side_link('main.appointments', 'My Appointments', 'fa-calendar-check') }}
+        {{ side_link('main.consultation', 'Virtual Consultation', 'fa-video') }}
+        <div class="cc-sidebar-label">Health</div>
+        {{ side_link('main.prescriptions', 'Prescriptions', 'fa-prescription-bottle-medical') }}
+        {{ side_link('main.medical_records', 'Medical Records', 'fa-folder-open') }}
+        {{ side_link('main.billing', 'Billing', 'fa-file-invoice-dollar') }}
+        <div class="cc-sidebar-label">Account</div>
+        {{ side_link('main.profile', 'My Profile', 'fa-user-gear') }}
+      {% endif %}
+    </nav>
+    <form method="post" action="{{ url_for('main.logout') }}" class="cc-sidebar-footer mt-auto pt-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="cc-side-link text-danger">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+      </button>
+    </form>
+  </aside>
+
+  <div class="cc-main">
+    <header class="cc-topbar">
+      <div class="min-w-0">
+        <h2 class="h5 mb-0 text-truncate">{% block page_title %}Dashboard{% endblock %}</h2>
+        <small class="text-muted">{{ today.strftime('%A, %d %B %Y') }}</small>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="text-end d-none d-sm-block">
+          <div class="fw-semibold small">{{ current_user.full_name }}</div>
+          <span class="cc-chip py-0">{{ 'Doctor' if current_user.is_doctor else 'Patient' }}</span>
+        </div>
+        <span class="cc-avatar-sm">{{ current_user.initials }}</span>
+      </div>
+    </header>
+    <main class="cc-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

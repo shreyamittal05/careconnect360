@@ -1,0 +1,82 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import status_badge, empty_state with context %}
+
+{% block title %}My appointments | CareConnect360{% endblock %}
+{% block page_title %}Appointments{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>{{ 'Patient bookings' if current_user.is_doctor else 'My appointments' }}</h1>
+    <p class="text-muted mb-0">Track every booking, from request to completed consultation.</p>
+  </div>
+  {% if not current_user.is_doctor %}
+    <a href="{{ url_for('main.book_appointment') }}" class="btn btn-primary"><i class="fa-solid fa-calendar-plus me-2"></i>New booking</a>
+  {% endif %}
+</div>
+
+<ul class="nav cc-filter-tabs mb-4 gap-2" aria-label="Filter appointments">
+  {% for key, label in [('all', 'All'), ('upcoming', 'Upcoming'), ('completed', 'Completed'), ('cancelled', 'Cancelled or rejected')] %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if status_filter == key }}" href="{{ url_for('main.appointments', status=key) }}">{{ label }}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<div class="cc-card cc-animate">
+  {% if appointments %}
+    <div class="table-responsive">
+      <table class="table cc-table mb-0">
+        <thead>
+          <tr>
+            <th>Appointment ID</th>
+            <th>{{ 'Patient' if current_user.is_doctor else 'Doctor' }}</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Mode</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in appointments %}
+            <tr>
+              <td class="fw-semibold">{{ appt.code }}</td>
+              <td>{{ appt.patient.full_name if current_user.is_doctor else appt.doctor.name }}</td>
+              <td>{{ appt.appointment_date.strftime('%d %b %Y') }}</td>
+              <td>{{ appt.time_slot }}</td>
+              <td><i class="fa-solid {{ 'fa-video' if appt.mode == 'video' else 'fa-phone' }} text-primary me-1"></i>{{ appt.mode | capitalize }}</td>
+              <td>{{ status_badge(appt.status) }}</td>
+              <td class="text-end">
+                <div class="d-flex flex-wrap justify-content-end gap-2">
+                  <a href="{{ url_for('main.appointment_detail', appointment_id=appt.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                  {% if current_user.is_doctor and appt.status == 'pending' %}
+                    <form method="post" action="{{ url_for('main.update_appointment_status', appointment_id=appt.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="accept">
+                      <button type="submit" class="btn btn-sm btn-teal">Accept</button>
+                    </form>
+                    <form method="post" action="{{ url_for('main.update_appointment_status', appointment_id=appt.id) }}" data-confirm="Reject this booking request?">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="reject">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                    </form>
+                  {% endif %}
+                  {% if not current_user.is_doctor and appt.status in ('pending', 'confirmed') %}
+                    <form method="post" action="{{ url_for('main.cancel_appointment', appointment_id=appt.id) }}" data-confirm="Cancel this appointment?">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {{ empty_state('fa-calendar-xmark', 'No appointments to show for this filter.') }}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import stat_card, status_badge, empty_state with context %}
+
+{% block title %}Doctor dashboard | CareConnect360{% endblock %}
+{% block page_title %}Doctor dashboard{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>{{ current_user.full_name }}</h1>
+    <p class="text-muted mb-0">{{ current_user.doctor.specialization }} &middot; {{ current_user.doctor.qualification }}</p>
+  </div>
+  <a href="{{ url_for('main.appointments') }}" class="btn btn-outline-primary">
+    <i class="fa-solid fa-calendar-check me-2"></i>All appointments
+  </a>
+</div>
+
+<div class="row g-3 g-lg-4 mb-4">
+  <div class="col-6 col-xl-3 cc-animate">{{ stat_card('fa-users', 'primary', total_patients, 'Total patients') }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-1">{{ stat_card('fa-calendar-day', 'teal', todays | length, "Today's appointments") }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-2">{{ stat_card('fa-hourglass-half', 'warning', pending_count, 'Pending appointments') }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-3">{{ stat_card('fa-circle-check', 'success', completed_count, 'Completed consultations') }}</div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="cc-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Booking requests</h2>
+        <span class="cc-chip">{{ pending_count }} pending</span>
+      </div>
+      {% for appt in pending %}
+        <div class="border rounded-3 p-3 mb-3">
+          <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="cc-avatar-sm">{{ appt.patient.initials }}</span>
+              <div>
+                <div class="fw-semibold">{{ appt.patient.full_name }}</div>
+                <div class="small text-muted">{{ appt.appointment_date.strftime('%d %b %Y') }} at {{ appt.time_slot }} &middot; {{ appt.mode | capitalize }}</div>
+              </div>
+            </div>
+            {{ status_badge(appt.status) }}
+          </div>
+          <p class="small text-muted mb-3">{{ appt.symptoms | truncate(140) }}</p>
+          <div class="d-flex flex-wrap gap-2">
+            <form method="post" action="{{ url_for('main.update_appointment_status', appointment_id=appt.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="accept">
+              <button type="submit" class="btn btn-sm btn-teal"><i class="fa-solid fa-check me-1"></i>Accept</button>
+            </form>
+            <form method="post" action="{{ url_for('main.update_appointment_status', appointment_id=appt.id) }}" data-confirm="Reject this booking request?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="reject">
+              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark me-1"></i>Reject</button>
+            </form>
+            <a href="{{ url_for('main.appointment_detail', appointment_id=appt.id) }}" class="btn btn-sm btn-outline-primary ms-auto">View details</a>
+          </div>
+        </div>
+      {% else %}
+        {{ empty_state('fa-inbox', 'No pending booking requests right now.') }}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="cc-card h-100">
+      <h2 class="h5 mb-3">Today's schedule</h2>
+      {% if todays %}
+        <div class="table-responsive">
+          <table class="table cc-table mb-0">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Patient</th>
+                <th>Mode</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in todays %}
+                <tr>
+                  <td class="fw-semibold">{{ appt.time_slot }}</td>
+                  <td>
+                    <a href="{{ url_for('main.appointment_detail', appointment_id=appt.id) }}" class="fw-semibold text-dark">{{ appt.patient.full_name }}</a>
+                  </td>
+                  <td>{{ appt.mode | capitalize }}</td>
+                  <td>{{ status_badge(appt.status) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {{ empty_state('fa-mug-hot', 'No consultations scheduled for today.') }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

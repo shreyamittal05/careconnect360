@@ -1,0 +1,121 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import empty_state with context %}
+
+{% block title %}Virtual consultation | CareConnect360{% endblock %}
+{% block page_title %}Virtual consultation{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Virtual consultation</h1>
+    <p class="text-muted mb-0">A simulated consultation room for confirmed appointments.</p>
+  </div>
+</div>
+
+{% if not selected %}
+  <div class="cc-card cc-animate">
+    {{ empty_state('fa-video-slash', 'You have no confirmed consultations ready to join. Confirmed appointments appear here automatically.') }}
+    {% if not current_user.is_doctor %}
+      <div class="text-center">
+        <a href="{{ url_for('main.book_appointment') }}" class="btn btn-primary">Book an appointment</a>
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="alert alert-info d-flex align-items-start gap-2 small mb-4" role="note">
+    <i class="fa-solid fa-circle-info mt-1"></i>
+    <span>This is a simulated consultation room for demonstration. No live camera, microphone or video connection is active.</span>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="cc-card p-3 mb-4 cc-animate">
+        <form method="get" action="{{ url_for('main.consultation') }}" class="row g-2 align-items-end">
+          <div class="col-md-9">
+            <label for="appointment" class="form-label">Select consultation</label>
+            <select class="form-select" id="appointment" name="appointment">
+              {% for item in appointments %}
+                <option value="{{ item.id }}" {% if item.id == selected.id %}selected{% endif %}>
+                  {{ item.code }} - {{ item.doctor.name if not current_user.is_doctor else item.patient.full_name }} - {{ item.appointment_date.strftime('%d %b') }} {{ item.time_slot }} ({{ item.mode }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-outline-primary w-100">Switch</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="cc-video-stage cc-animate" id="consultStage">
+        <div class="cc-video-timer" aria-live="off"><i class="fa-regular fa-clock me-1"></i><span id="callTimer">00:00</span></div>
+        <div class="cc-video-panel" aria-label="{{ 'Patient' if current_user.is_doctor else 'Doctor' }} video panel">
+          <span class="cc-avatar-sm" style="width: 96px; height: 96px; font-size: 2rem; background: #334155; color: #fff;">
+            {{ (selected.patient.initials if current_user.is_doctor else selected.doctor.user.initials) }}
+          </span>
+          <div class="fw-semibold">{{ selected.patient.full_name if current_user.is_doctor else selected.doctor.name }}</div>
+          <div class="small text-secondary">Simulated {{ 'patient' if current_user.is_doctor else 'doctor' }} feed</div>
+          <span class="cc-video-label">{{ 'Patient' if current_user.is_doctor else 'Doctor' }}</span>
+        </div>
+        <div class="cc-video-self">
+          <div class="cc-video-panel" id="selfPanel">
+            <span class="cc-avatar-sm" style="background: #1e40af; color: #fff;">{{ current_user.initials }}</span>
+            <div class="small cc-camera-state">Camera off</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc-card mt-4 cc-animate cc-delay-1">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <div class="small text-muted">Session status</div>
+            <div class="fw-semibold" id="sessionStatus" aria-live="polite">Simulation ready</div>
+          </div>
+          <button type="button" class="btn btn-teal btn-lg" id="startSession"><i class="fa-solid fa-play me-2"></i>Start simulated session</button>
+        </div>
+        <hr>
+        <div class="cc-controls">
+          <button type="button" class="cc-control-btn" id="toggleCamera" aria-pressed="false" title="Turn camera on" data-icon-on="fa-video" data-icon-off="fa-video-slash" disabled>
+            <i class="fa-solid fa-video-slash"></i>
+          </button>
+          <button type="button" class="cc-control-btn" id="toggleMic" aria-pressed="true" title="Mute microphone" data-icon-on="fa-microphone" data-icon-off="fa-microphone-slash" disabled>
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <button type="button" class="cc-control-btn end" id="endCall" disabled><i class="fa-solid fa-phone-slash me-2"></i>End call</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="cc-card cc-animate cc-delay-1 mb-4">
+        <h2 class="h5 mb-3">Consultation information</h2>
+        <ul class="list-unstyled small d-grid gap-2 mb-0">
+          <li class="d-flex justify-content-between"><span class="text-muted">Appointment</span><span class="fw-semibold">{{ selected.code }}</span></li>
+          <li class="d-flex justify-content-between"><span class="text-muted">{{ 'Patient' if current_user.is_doctor else 'Doctor' }}</span><span class="fw-semibold">{{ selected.patient.full_name if current_user.is_doctor else selected.doctor.name }}</span></li>
+          <li class="d-flex justify-content-between"><span class="text-muted">Date</span><span class="fw-semibold">{{ selected.appointment_date.strftime('%d %b %Y') }}</span></li>
+          <li class="d-flex justify-content-between"><span class="text-muted">Time</span><span class="fw-semibold">{{ selected.time_slot }}</span></li>
+          <li class="d-flex justify-content-between"><span class="text-muted">Mode</span><span class="fw-semibold">{{ selected.mode | capitalize }}</span></li>
+        </ul>
+        <div class="mt-3 small">
+          <span class="text-muted d-block mb-1">Reason for visit</span>
+          {{ selected.symptoms }}
+        </div>
+      </div>
+
+      <div class="cc-card cc-animate cc-delay-2">
+        <h2 class="h5 mb-3">Secure chat</h2>
+        <div class="cc-chat">
+          <div class="cc-chat-log" id="chatLog" aria-live="polite">
+            <div class="cc-bubble them"><small>Care team</small>Join the simulated session to start chatting.</div>
+          </div>
+          <form id="chatForm" class="d-flex gap-2 mt-3">
+            <input type="text" class="form-control" id="chatInput" placeholder="Type a message" maxlength="300" aria-label="Chat message" disabled>
+            <button type="submit" class="btn btn-primary" disabled aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button>
+          </form>
+          <p class="small text-muted mt-2 mb-0">Chat messages stay on this screen only.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "dashboard_layout.html" %}
+
+{% block title %}{{ doctor.name }} | CareConnect360{% endblock %}
+{% block page_title %}Doctor profile{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('main.doctors') }}" class="small fw-semibold d-inline-block mb-3"><i class="fa-solid fa-arrow-left me-1"></i>Back to doctors</a>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="cc-card cc-animate">
+      <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-4">
+        {% if doctor.photo_url %}
+          <img src="{{ doctor.photo_url }}" alt="Photo of {{ doctor.name }}" class="rounded-circle" width="128" height="128" style="object-fit: cover; border: 4px solid var(--cc-primary-soft);">
+        {% else %}
+          <span class="cc-avatar-sm" style="width: 128px; height: 128px; font-size: 2.2rem;">{{ doctor.user.initials }}</span>
+        {% endif %}
+        <div>
+          <h1 class="h3 mb-1">{{ doctor.name }}</h1>
+          <div class="text-primary fw-semibold mb-1">{{ doctor.specialization }}</div>
+          <div class="text-muted mb-3">{{ doctor.qualification }}</div>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="cc-chip"><i class="fa-solid fa-briefcase text-primary"></i>{{ doctor.experience_years }} years experience</span>
+            <span class="cc-chip"><i class="fa-solid fa-star text-warning"></i>{{ '%.1f'|format(doctor.rating) }} rating</span>
+          </div>
+        </div>
+      </div>
+      <hr class="my-4">
+      <h2 class="h5">About</h2>
+      <p class="text-muted mb-0">{{ doctor.bio or 'This doctor has not added a biography yet.' }}</p>
+    </div>
+
+    <div class="cc-card mt-4 cc-animate cc-delay-1">
+      <h2 class="h5 mb-3">Weekly availability</h2>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+          <span class="cc-chip {{ '' if day in doctor.days_list else 'text-muted' }}" style="{{ '' if day in doctor.days_list else 'opacity: 0.45;' }}">
+            <i class="fa-solid {{ 'fa-circle-check text-success' if day in doctor.days_list else 'fa-circle-xmark' }}"></i>{{ day }}
+          </span>
+        {% endfor %}
+      </div>
+      <h3 class="h6 mb-3">Next available days</h3>
+      {% if next_days %}
+        <div class="row row-cols-1 row-cols-sm-2 g-3">
+          {% for item in next_days %}
+            <div class="col">
+              <div class="border rounded-3 p-3 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">{{ item.date.strftime('%a, %d %b') }}</span>
+                <span class="small {{ 'text-success' if item.open_slots else 'text-danger' }}">{{ item.open_slots }} slot{{ '' if item.open_slots == 1 else 's' }} open</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">No upcoming availability in the next two weeks.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="cc-card cc-animate cc-delay-2 position-sticky" style="top: 96px;">
+      <div class="small text-muted">Consultation fee</div>
+      <div class="cc-price fs-2 mb-3">{{ format_inr(doctor.consultation_fee) }}</div>
+      <p class="small text-muted">Includes video or audio consultation. GST of 18% is added on the invoice.</p>
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('main.book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-calendar-plus me-2"></i>Book appointment
+        </a>
+        <a href="{{ url_for('main.doctors') }}" class="btn btn-outline-primary">Browse other doctors</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

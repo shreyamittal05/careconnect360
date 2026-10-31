@@ -1,0 +1,119 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import stat_card, status_badge, empty_state with context %}
+
+{% block title %}Dashboard | CareConnect360{% endblock %}
+{% block page_title %}Patient dashboard{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Welcome back, {{ current_user.full_name.split()[0] }}</h1>
+    <p class="text-muted mb-0">Here is a summary of your care journey.</p>
+  </div>
+  <a href="{{ url_for('main.book_appointment') }}" class="btn btn-primary">
+    <i class="fa-solid fa-calendar-plus me-2"></i>Book an appointment
+  </a>
+</div>
+
+<div class="row g-3 g-lg-4 mb-4">
+  <div class="col-6 col-xl-3 cc-animate">{{ stat_card('fa-calendar-days', 'primary', total_count, 'Total appointments') }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-1">{{ stat_card('fa-clock', 'warning', upcoming_count, 'Upcoming appointments') }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-2">{{ stat_card('fa-circle-check', 'success', completed_count, 'Completed consultations') }}</div>
+  <div class="col-6 col-xl-3 cc-animate cc-delay-3">{{ stat_card('fa-prescription-bottle-medical', 'teal', active_prescriptions, 'Active prescriptions') }}</div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-7">
+    <div class="cc-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Upcoming appointments</h2>
+        <a href="{{ url_for('main.appointments') }}" class="small fw-semibold">View all</a>
+      </div>
+      {% if upcoming %}
+        <div class="table-responsive">
+          <table class="table cc-table mb-0">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th>Date and time</th>
+                <th>Mode</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in upcoming %}
+                <tr>
+                  <td>
+                    <a href="{{ url_for('main.appointment_detail', appointment_id=appt.id) }}" class="fw-semibold text-dark">{{ appt.doctor.name }}</a>
+                    <div class="small text-muted">{{ appt.doctor.specialization }}</div>
+                  </td>
+                  <td>{{ appt.appointment_date.strftime('%d %b %Y') }}<div class="small text-muted">{{ appt.time_slot }}</div></td>
+                  <td><i class="fa-solid {{ 'fa-video' if appt.mode == 'video' else 'fa-phone' }} me-1 text-primary"></i>{{ appt.mode | capitalize }}</td>
+                  <td>{{ status_badge(appt.status) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {{ empty_state('fa-calendar-xmark', 'No upcoming appointments yet.') }}
+        <div class="text-center">
+          <a href="{{ url_for('main.doctors') }}" class="btn btn-outline-primary btn-sm">Find a doctor</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="cc-card h-100">
+      <h2 class="h5 mb-3">Recent activity</h2>
+      {% for appt in recent %}
+        <div class="cc-activity-item">
+          <span class="cc-timeline-dot"></span>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">
+              {% if appt.status == 'completed' %}Consultation completed{% elif appt.status == 'confirmed' %}Appointment confirmed{% elif appt.status in ('cancelled', 'rejected') %}Appointment {{ appt.status }}{% else %}Booking requested{% endif %}
+              with {{ appt.doctor.name }}
+            </div>
+            <div class="small text-muted">{{ appt.code }} &middot; {{ appt.appointment_date.strftime('%d %b %Y') }} at {{ appt.time_slot }}</div>
+          </div>
+          {{ status_badge(appt.status) }}
+        </div>
+      {% else %}
+        {{ empty_state('fa-bell', 'Your activity will appear here once you book.') }}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-md-6 col-xl-3">
+    <a href="{{ url_for('main.doctors') }}" class="cc-card cc-card-hover d-block text-decoration-none h-100">
+      <span class="cc-icon-badge"><i class="fa-solid fa-user-doctor"></i></span>
+      <div class="fw-semibold text-dark">Find doctors</div>
+      <small class="text-muted">Filter by specialization and day</small>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <a href="{{ url_for('main.consultation') }}" class="cc-card cc-card-hover d-block text-decoration-none h-100">
+      <span class="cc-icon-badge teal"><i class="fa-solid fa-video"></i></span>
+      <div class="fw-semibold text-dark">Join consultation</div>
+      <small class="text-muted">Open your virtual visit room</small>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <a href="{{ url_for('main.prescriptions') }}" class="cc-card cc-card-hover d-block text-decoration-none h-100">
+      <span class="cc-icon-badge teal"><i class="fa-solid fa-prescription-bottle-medical"></i></span>
+      <div class="fw-semibold text-dark">View prescriptions</div>
+      <small class="text-muted">Print or download your medicines</small>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <a href="{{ url_for('main.billing') }}" class="cc-card cc-card-hover d-block text-decoration-none h-100">
+      <span class="cc-icon-badge"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+      <div class="fw-semibold text-dark">Billing</div>
+      <small class="text-muted">Pay invoices and view history</small>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import empty_state with context %}
+
+{% block title %}Find doctors | CareConnect360{% endblock %}
+{% block page_title %}Find doctors{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Find a doctor</h1>
+    <p class="text-muted mb-0">Search by name, specialization or the day you are free.</p>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('main.doctors') }}" class="cc-card mb-4 cc-animate" role="search">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label for="q" class="form-label">Doctor name</label>
+      <input type="search" class="form-control" id="q" name="q" value="{{ filters.get('q', '') }}" placeholder="e.g. Ananya">
+    </div>
+    <div class="col-md-3">
+      <label for="specialization" class="form-label">Specialization</label>
+      <select class="form-select" id="specialization" name="specialization">
+        <option value="">All specializations</option>
+        {% for item in specializations %}
+          <option value="{{ item }}" {% if filters.get('specialization') == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label for="day" class="form-label">Available on</label>
+      <select class="form-select" id="day" name="day">
+        <option value="">Any day</option>
+        {% for item in weekdays %}
+          <option value="{{ item }}" {% if filters.get('day') == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+      <a href="{{ url_for('main.doctors') }}" class="btn btn-outline-primary" title="Reset filters" aria-label="Reset filters"><i class="fa-solid fa-rotate-left"></i></a>
+    </div>
+  </div>
+</form>
+
+<p class="text-muted small mb-3">{{ doctors | length }} doctor{{ '' if doctors | length == 1 else 's' }} found</p>
+
+<div class="row g-4">
+  {% for doctor in doctors %}
+    <div class="col-md-6 col-xl-4 cc-animate">
+      <article class="cc-card cc-card-hover h-100 d-flex flex-column">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          {% if doctor.photo_url %}
+            <img src="{{ doctor.photo_url }}" alt="Photo of {{ doctor.name }}" class="rounded-circle border border-3 border-light" width="72" height="72" style="object-fit: cover;" loading="lazy">
+          {% else %}
+            <span class="cc-avatar-sm" style="width: 72px; height: 72px; font-size: 1.4rem;">{{ doctor.user.initials }}</span>
+          {% endif %}
+          <div class="min-w-0">
+            <h2 class="h5 mb-1 text-truncate">{{ doctor.name }}</h2>
+            <div class="text-primary fw-semibold small">{{ doctor.specialization }}</div>
+            <div class="small text-muted text-truncate">{{ doctor.qualification }}</div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <span class="cc-chip"><i class="fa-solid fa-briefcase text-primary"></i>{{ doctor.experience_years }} yrs exp.</span>
+          <span class="cc-chip"><i class="fa-solid fa-star text-warning"></i>{{ '%.1f'|format(doctor.rating) }} rating</span>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold text-muted mb-1">Availability</div>
+          <div class="d-flex flex-wrap gap-1">
+            {% for day in doctor.days_list %}
+              <span class="cc-chip py-0 px-2">{{ day }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
+          <div>
+            <div class="small text-muted">Consultation fee</div>
+            <div class="cc-price">{{ format_inr(doctor.consultation_fee) }}</div>
+          </div>
+        </div>
+        <div class="d-grid d-sm-flex gap-2 mt-3">
+          <a href="{{ url_for('main.doctor_profile', doctor_id=doctor.id) }}" class="btn btn-outline-primary flex-sm-fill">View profile</a>
+          <a href="{{ url_for('main.book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary flex-sm-fill">Book appointment</a>
+        </div>
+      </article>
+    </div>
+  {% else %}
+    <div class="col-12">
+      <div class="cc-card">
+        {{ empty_state('fa-user-doctor', 'No doctors match these filters. Try a different specialization or day.') }}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

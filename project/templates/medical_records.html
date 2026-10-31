@@ -1,0 +1,142 @@
+{% extends "dashboard_layout.html" %}
+{% from "macros.html" import empty_state with context %}
+
+{% block title %}Medical Records | CareConnect360{% endblock %}
+{% block page_title %}Medical Records{% endblock %}
+
+{% block content %}
+<div class="cc-page-header cc-animate">
+  <div>
+    <h1>Medical Records</h1>
+    <p class="text-muted mb-0">Your health history, consultation notes, prescriptions and uploaded documents in one place.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="cc-card cc-animate">
+      <h2 class="h5 mb-1">Add a medical record</h2>
+      <p class="small text-muted mb-3">Upload a lab report, scan or add your own history entry.</p>
+      <form method="post" action="{{ url_for('main.medical_records') }}" enctype="multipart/form-data" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="record_type" class="form-label">Record type</label>
+            <select class="form-select" id="record_type" name="record_type" required>
+              {% for rtype in record_types %}
+                <option value="{{ rtype }}" {% if form.get('record_type') == rtype %}selected{% endif %}>{{ rtype }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="record_date" class="form-label">Date</label>
+            <input type="date" class="form-control" id="record_date" name="record_date" max="{{ today.isoformat() }}" value="{{ form.get('record_date', today.isoformat()) }}" required>
+          </div>
+          <div class="col-12">
+            <label for="title" class="form-label">Title</label>
+            <input type="text" class="form-control" id="title" name="title" maxlength="120" value="{{ form.get('title', '') }}" placeholder="e.g. Blood sugar test" required>
+          </div>
+          <div class="col-12">
+            <label for="symptoms" class="form-label">Symptoms <span class="text-muted small">(optional)</span></label>
+            <textarea class="form-control" id="symptoms" name="symptoms" rows="2" maxlength="1000">{{ form.get('symptoms', '') }}</textarea>
+          </div>
+          <div class="col-12">
+            <label for="diagnosis" class="form-label">Diagnosis <span class="text-muted small">(optional)</span></label>
+            <input type="text" class="form-control" id="diagnosis" name="diagnosis" maxlength="255" value="{{ form.get('diagnosis', '') }}">
+          </div>
+          <div class="col-12">
+            <label for="notes" class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <textarea class="form-control" id="notes" name="notes" rows="2" maxlength="1000">{{ form.get('notes', '') }}</textarea>
+          </div>
+          <div class="col-12">
+            <label for="document" class="form-label">Document <span class="text-muted small">(PDF, PNG or JPG, up to 5 MB)</span></label>
+            <input type="file" class="form-control" id="document" name="document" accept=".pdf,.png,.jpg,.jpeg">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-4"><i class="fa-solid fa-circle-plus me-2"></i>Save record</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    <div class="cc-card mb-4 cc-animate cc-delay-1">
+      <h2 class="h5 mb-3">Health records</h2>
+      {% if records %}
+        <div class="d-grid gap-3">
+          {% for record in records %}
+            <article class="border rounded-4 p-3">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-1">
+                <div>
+                  <span class="cc-chip">{{ record.record_type }}</span>
+                  <h3 class="h6 mt-2 mb-0">{{ record.title }}</h3>
+                </div>
+                <span class="small text-muted"><i class="fa-regular fa-calendar me-1"></i>{{ record.record_date.strftime('%d %b %Y') }}</span>
+              </div>
+              {% if record.diagnosis %}<p class="small mb-1"><span class="text-muted">Diagnosis:</span> {{ record.diagnosis }}</p>{% endif %}
+              {% if record.symptoms %}<p class="small mb-1"><span class="text-muted">Symptoms:</span> {{ record.symptoms }}</p>{% endif %}
+              {% if record.notes %}<p class="small mb-1"><span class="text-muted">Notes:</span> {{ record.notes }}</p>{% endif %}
+              {% if record.document_filename %}
+                <a href="{{ url_for('main.view_record_document', record_id=record.id) }}" class="btn btn-sm btn-outline-primary mt-2"><i class="fa-solid fa-file-arrow-down me-1"></i>{{ record.document_original_name }}</a>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ empty_state('fa-folder-open', 'No health records yet. Add your first record using the form.') }}
+      {% endif %}
+    </div>
+
+    <div class="cc-card mb-4 cc-animate cc-delay-2">
+      <h2 class="h5 mb-3">Previous consultations</h2>
+      {% if consultations %}
+        <div class="table-responsive">
+          <table class="table cc-table mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Doctor</th>
+                <th>Diagnosis</th>
+                <th>Doctor notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in consultations %}
+                <tr>
+                  <td class="text-nowrap">{{ appt.appointment_date.strftime('%d %b %Y') }}</td>
+                  <td>{{ appt.doctor.name }}<div class="small text-muted">{{ appt.doctor.specialization }}</div></td>
+                  <td>{{ appt.diagnosis or 'Not recorded' }}</td>
+                  <td class="small">{{ appt.doctor_notes or 'No notes added' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {{ empty_state('fa-user-doctor', 'Completed consultations will appear here.') }}
+      {% endif %}
+    </div>
+
+    <div class="cc-card cc-animate cc-delay-3">
+      <h2 class="h5 mb-3">Prescription history</h2>
+      {% if prescription_history %}
+        <ul class="list-unstyled mb-0">
+          {% for rx in prescription_history %}
+            <li class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 border-bottom">
+              <div>
+                <div class="fw-semibold">{{ rx.medicine_name }} <span class="text-muted fw-normal small">{{ rx.dosage }}, {{ rx.frequency }}</span></div>
+                <div class="small text-muted">{{ rx.code }} &middot; {{ rx.prescription_date.strftime('%d %b %Y') }} &middot; {{ rx.doctor.name }}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="cc-badge cc-badge-{{ 'active' if rx.is_active else 'expired' }}">{{ 'active' if rx.is_active else 'expired' }}</span>
+                <a href="{{ url_for('main.print_prescription', prescription_id=rx.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-print"></i></a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        {{ empty_state('fa-prescription-bottle-medical', 'Prescriptions from your doctors will appear here.') }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
