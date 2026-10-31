@@ -12,3 +12,4 @@ careconnect360_django.db
 venv/
 env/
 .env
+.vercel
